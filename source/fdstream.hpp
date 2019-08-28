@@ -41,10 +41,10 @@ public:
 
     ofdstream(int fd, size_t bufsize =static_cast<size_t>(BUFSIZ))
     : filebuf { fd < 0 ? nullptr :
-	new __gnu_cxx::stdio_filebuf<CharT, Traits>(fd, std::ios_base::out, bufsize) }
+        new __gnu_cxx::stdio_filebuf<CharT, Traits>(fd, std::ios_base::out, bufsize) }
     // Note: __gnu_cxx::stdio_filebuf<> -> std::basic_filebuf<> -> std::basic_streambuf<>
     { this->init(filebuf.get()); }
-	// this->init(p) is the same as std::basic_ostream<CharT, Traits>::rdbuf(p).
+        // this->init(p) is the same as std::basic_ostream<CharT, Traits>::rdbuf(p).
 
     // bufsize of 0 (or setting std::unitbuf (https://stackoverflow.com/a/26976747)) is 
     // preferred for pipes, because pipe itself has a buffer (and so does the stdin of 
@@ -53,7 +53,7 @@ public:
     // (https://stackoverflow.com/a/42431124).)
 
     ofdstream(const std::string& filename,
-	std::ios_base::openmode mode =std::ios_base::out)
+        std::ios_base::openmode mode =std::ios_base::out)
     { open(filename, mode); }
 
     ~ofdstream() {}  // will close the underlying fd as well
@@ -61,23 +61,23 @@ public:
     // Todo: move constructor/operator!
 
     void open(const std::string& filename,
-	std::ios_base::openmode mode =std::ios_base::out);
+        std::ios_base::openmode mode =std::ios_base::out);
 
     bool is_open() const { return filebuf && filebuf->is_open(); }
 
     void close() {  // close the underlying fd like ofstream does
-	// No need to run this->setstate(std::ios_base::eofbit) since closing does not 
-	// mean EOF reached.
-	if ( filebuf && !filebuf->close() )
-	    this->setstate(std::ios_base::failbit);
+        // No need to run this->setstate(std::ios_base::eofbit) since closing does not 
+        // mean EOF reached.
+        if ( filebuf && !filebuf->close() )
+            this->setstate(std::ios_base::failbit);
     }
 
     std::basic_filebuf<CharT, Traits>* rdbuf() const { return filebuf.get(); }
 
     int fd() {
-	struct _filebuf: std::basic_filebuf<CharT, Traits> {
-	    int fd() { return this->_M_file.fd(); } };
-	return filebuf ? static_cast<_filebuf*>(filebuf.get())->fd() : -1;
+        struct _filebuf: std::basic_filebuf<CharT, Traits> {
+            int fd() { return this->_M_file.fd(); } };
+        return filebuf ? static_cast<_filebuf*>(filebuf.get())->fd() : -1;
     }
 };
 
@@ -86,12 +86,12 @@ void ofdstream<CharT, Traits>::open(const std::string& filename,
     std::ios_base::openmode mode)
 {
     filebuf.reset(new std::basic_filebuf<CharT, Traits>());
-	// The size of the underlying file buffer is BUFSIZ fixed.
+        // The size of the underlying file buffer is BUFSIZ fixed.
     if ( filebuf->open(filename, mode | std::ios_base::out) )
-	this->clear();
+        this->clear();
     else {
-	filebuf.reset();
-	this->setstate(std::ios_base::failbit);
+        filebuf.reset();
+        this->setstate(std::ios_base::failbit);
     }
     this->init(filebuf.get());
 }
@@ -108,34 +108,34 @@ public:
 
     ifdstream(int fd, size_t bufsize =static_cast<size_t>(BUFSIZ))
     : filebuf { fd < 0 ? nullptr :
-	new __gnu_cxx::stdio_filebuf<CharT, Traits>(fd, std::ios_base::in, bufsize) }
+        new __gnu_cxx::stdio_filebuf<CharT, Traits>(fd, std::ios_base::in, bufsize) }
     { this->init(filebuf.get()); }
 
     // bufsize of 0 is preferred for pipes, assuming that accessing pipe is efficient 
     // enough that we don't need another layer of buffering.
 
     ifdstream(const std::string& filename,
-	std::ios_base::openmode mode =std::ios_base::in)
+        std::ios_base::openmode mode =std::ios_base::in)
     { open(filename, mode); }
 
     ~ifdstream() {}
 
     void open(const std::string& filename,
-	std::ios_base::openmode mode =std::ios_base::in);
+        std::ios_base::openmode mode =std::ios_base::in);
 
     bool is_open() const { return filebuf && filebuf->is_open(); }
 
     void close() {
-	if ( filebuf && !filebuf->close() )
-	    this->setstate(std::ios_base::failbit);
+        if ( filebuf && !filebuf->close() )
+            this->setstate(std::ios_base::failbit);
     }
 
     std::basic_filebuf<CharT, Traits>* rdbuf() const { return filebuf.get(); }
 
     int fd() {
-	struct _filebuf: std::basic_filebuf<CharT, Traits> {
-	    int fd() { return this->_M_file.fd(); } };
-	return filebuf ? static_cast<_filebuf*>(filebuf.get())->fd() : -1;
+        struct _filebuf: std::basic_filebuf<CharT, Traits> {
+            int fd() { return this->_M_file.fd(); } };
+        return filebuf ? static_cast<_filebuf*>(filebuf.get())->fd() : -1;
     }
 };
 
@@ -145,10 +145,10 @@ void ifdstream<CharT, Traits>::open(const std::string& filename,
 {
     filebuf.reset(new std::basic_filebuf<CharT, Traits>());
     if ( filebuf->open(filename, mode | std::ios_base::in) )
-	this->clear();
+        this->clear();
     else {
-	filebuf.reset();
-	this->setstate(std::ios_base::failbit);
+        filebuf.reset();
+        this->setstate(std::ios_base::failbit);
     }
     this->init(filebuf.get());
 }

@@ -2,24 +2,94 @@
 
 
 
+#include <chrono>
+
+inline std::chrono::time_point<std::chrono::steady_clock> now()
+{
+    return std::chrono::steady_clock::now();
+}
+
+inline int duration_ms(const std::chrono::time_point<std::chrono::steady_clock>& since)
+{
+    return
+        std::chrono::duration_cast<std::chrono::milliseconds>(now() - since).count();
+}
+
+
+
 #include "process.hpp"
 #include "fdstream.hpp"
+#include <string>
 #include <iostream>
 
-#if 0  // simple command
-int main()
+
+
+void simple_sleep()
 {
     process proc { "sleep", "3" };
     proc.wait();  // not to make proc an orphan process
 }
-#endif
 
-#if 0  // run in one line
-int main()
+void test_simple_sleep()
+{
+    const auto since = now();
+    std::thread sleep { simple_sleep };
+    sleep.join();
+
+    const int elapsed = duration_ms(since);
+    assert( elapsed >= 3000 && elapsed <= 3010 );
+    std::cout << "elapsed = " << elapsed << '\n';
+}
+
+
+
+void simple_sleep_in_one_line()
 {
     process { "sleep", "3" }.wait();
 }
-#endif
+
+void test_simple_sleep_in_one_line()
+{
+    const auto since = now();
+    std::thread sleep { simple_sleep_in_one_line };
+    sleep.join();
+
+    const int elapsed = duration_ms(since);
+    assert( elapsed >= 3000 && elapsed <= 3010 );
+    std::cout << "elapsed = " << elapsed << '\n';
+}
+
+
+
+void test_piped_output()
+{
+    process ps { { "ps" }, process::PIPE };
+    assert( ps.poll() == false );
+
+    process grep { ps.stdout, { "grep", std::to_string(ps.pid) }, process::PIPE };
+    assert( grep.poll() == false );
+
+    ifdstream<> is { grep.stdout };
+
+    std::string s;
+    std::getline(is, s);
+    std::cout << s << '\n';
+    assert( ps.pid == std::stoi(s) );
+    assert( is.peek() == EOF );
+
+    ps.wait();
+    grep.wait();
+    assert( ps.exitcode == 0 && grep.exitcode == 0 );
+}
+
+int main()
+{
+    test_simple_sleep();
+    test_simple_sleep_in_one_line();
+    test_piped_output();
+}
+
+
 
 #if 0  // command for output
 int main()
@@ -100,7 +170,7 @@ int main()
 
     std::string s;
     while ( getline(is, s) )
-	std::cout << '[' << s << "]\n";
+        std::cout << '[' << s << "]\n";
 
     proc.wait();
 }
@@ -110,12 +180,12 @@ int main()
 int main()
 {
     process proc { { "bash", "-c", "time ls -l" }, process::PIPE, process::SAMEOUT };
-	// proc.stderr goes to the same pipe for proc.stdout.
+        // proc.stderr goes to the same pipe for proc.stdout.
     ifdstream<> is { proc.stdout };
 
     std::string s;
     while ( getline(is, s) )
-	std::cout << '[' << s << "]\n";
+        std::cout << '[' << s << "]\n";
 
     proc.wait();
 }
@@ -146,7 +216,7 @@ int main()
 
     std::string s;
     while ( getline(is, s) )
-	std::cout << '[' << s << "]\n";
+        std::cout << '[' << s << "]\n";
 
     proc.wait();
 }
@@ -163,9 +233,9 @@ int main()
     //process proc { { std::string("sleep"), "3" } };  // ok
     process proc { "sleep", "3" };  // ok
     //process proc { { "sleep", "3" } };  // run-time error in g++
-	// because the outer (not inner) brace is taken as the first parameter 
-	// initializer_list<string> containing a single string, which is { "sleep", "3" 
-	// }.
+        // because the outer (not inner) brace is taken as the first parameter 
+        // initializer_list<string> containing a single string, which is { "sleep", "3" 
+        // }.
 
     proc.wait();
     std::cout << "done\n";
@@ -187,11 +257,11 @@ int main()
 int main()
 {
     process proc {
-	process{
-	    process{ { "ls", "-l" }, process::PIPE }.stdout,
-	    { "sort", "-n", "-k5" }, process::PIPE  // sort by file size
-	}.stdout,
-	{ "grep", "cpp" }, process::STDOUT
+        process{
+            process{ { "ls", "-l" }, process::PIPE }.stdout,
+            { "sort", "-n", "-k5" }, process::PIPE  // sort by file size
+        }.stdout,
+        { "grep", "cpp" }, process::STDOUT
     };
 
     proc.wait();  // waiting for the outermost process "grep".
@@ -202,10 +272,10 @@ int main()
 int main()
 {
     process proc {
-	process { process::PIPE, { "cat" }, process::PIPE }.stdout,
-	    // The stdin for "cat" process gets closed automatically as the temporary 
-	    // (unbound) process object is destroyed.
-	{ "sort" }, process::STDOUT
+        process { process::PIPE, { "cat" }, process::PIPE }.stdout,
+            // The stdin for "cat" process gets closed automatically as the temporary 
+            // (unbound) process object is destroyed.
+        { "sort" }, process::STDOUT
     };
     // The stdin for proc is unspecified and so having fd of "/dev/null".
 
@@ -263,7 +333,7 @@ int main()
     ofdstream<> os { proc2.stdin };
     os << "line 1\n";
     os.close();  // Now proc2 will see EOF on its stdin and terminate.
-		 // Without it, proc2 will not terminate.
+                 // Without it, proc2 will not terminate.
 
     proc2.wait();
 }
@@ -277,8 +347,8 @@ int main()
 
     os << "line 1\n" << std::flush;   // line will go into proc at the std::flush,
     os << "line 2" << std::endl;      // or will go into proc at the std::endl.
-    os << "line 3\n";		      // "line 3" will not go until os.close().
-				      // Note, C++ has only std::cout line-buffered.
+    os << "line 3\n";                 // "line 3" will not go until os.close().
+                                      // Note, C++ has only std::cout line-buffered.
     process { "sleep", "1" }.wait();  // wait and sleep for 1 sec.
     os.close();
     proc.wait();
@@ -293,7 +363,7 @@ int main()
 
     os << "line 1\n";
     os.put('l');
-    os << "ine 2";		       // chars will go into proc immdediately.
+    os << "ine 2";                     // chars will go into proc immdediately.
     process { "sleep", "1" }.wait();
     os.close();
     proc.wait();
@@ -329,9 +399,9 @@ int main()
 
     std::string s;
     while ( getline(is, s) ) {
-	std::cout << '[' << s << "]\n";
-	if ( s == "done" )
-	    break;
+        std::cout << '[' << s << "]\n";
+        if ( s == "done" )
+            break;
     }
     process { "sleep", "1" }.wait();
 
@@ -360,9 +430,9 @@ int main()
 {
     ofdstream<> os { "/tmp/test.txt" };
     if ( os ) {
-	process proc { { "ls", "-l" }, os.fd() };
-	proc.wait();
-	std::cout << "done\n";
+        process proc { { "ls", "-l" }, os.fd() };
+        proc.wait();
+        std::cout << "done\n";
     }
 }
 #endif
@@ -372,14 +442,14 @@ int main()
 {
     ofdstream<> os { "/tmp/test.txt" };
     if ( os ) {
-	process proc { process::PIPE, { "cat" }, os.fd() };
-	ofdstream<> os { proc.stdin };
-	assert( proc.stdin == os.fd() );  // is true.
+        process proc { process::PIPE, { "cat" }, os.fd() };
+        ofdstream<> os { proc.stdin };
+        assert( proc.stdin == os.fd() );  // is true.
 
-	os << "line 2\n" << "line 1\n";
-	os.close();
-	proc.wait();
-	std::cout << "done\n";
+        os << "line 2\n" << "line 1\n";
+        os.close();
+        proc.wait();
+        std::cout << "done\n";
     }
 }
 #endif
@@ -389,10 +459,10 @@ int main()
 {
     std::ofstream os { "/tmp/test.txt" };
     if ( os ) {
-	process proc { { "ls", "-l" }, fd(os) };
-	    // ::fd() returns the underlying fd for ifstream/ofstream/fstream.
-	proc.wait();
-	std::cout << "done\n";
+        process proc { { "ls", "-l" }, fd(os) };
+            // ::fd() returns the underlying fd for ifstream/ofstream/fstream.
+        proc.wait();
+        std::cout << "done\n";
     }
 }
 #endif
@@ -401,7 +471,7 @@ int main()
 int main()
 {
     process proc { "sleep", "1" };  // Note no wait for proc.
-	// proc becomes a defunct process until main process terminates.
+        // proc becomes a defunct process until main process terminates.
     process { "sleep", "10" }.wait();
     std::cout << "done\n";
 }
@@ -414,12 +484,12 @@ int main()
     process proc { "sleep", "10" };
 
     bool done = proc.wait(1s);
-	// proc becomes an orphan process after main process terminates.
+        // proc becomes an orphan process after main process terminates.
 
     if ( done )
-	std::cout << "done\n";
+        std::cout << "done\n";
     else
-	std::cout << "child process with pid " << proc.pid << " left behind.\n";
+        std::cout << "child process with pid " << proc.pid << " left behind.\n";
 }
 #endif
 
@@ -437,7 +507,7 @@ void func2(process& proc)
 
     std::cout << "func2(): start\n";
     while ( !proc.wait(1s) )
-	std::cout << "func2(): still running\n";
+        std::cout << "func2(): still running\n";
     std::cout << "func2(): done w/exitcode=" << proc.exitcode << "\n";
 }
 
@@ -467,8 +537,8 @@ void func2(process& proc)
 
     std::cout << "func2(): start\n";
     while ( !proc.poll() ) {
-	std::this_thread::sleep_for(1s);
-	std::cout << "func2(): still running\n";
+        std::this_thread::sleep_for(1s);
+        std::cout << "func2(): still running\n";
     }
     std::cout << "func2(): done w/exitcode=" << proc.exitcode << "\n";
 }
@@ -485,7 +555,7 @@ int main()
 }
 #endif
 
-#if 1
+#if 0
 void func(process& proc, int n)
 {
     std::cout << n << " starts.\n";
@@ -498,9 +568,9 @@ int main()
     process proc { "sleep", "10" };
     std::thread t[1000];
     for ( int i = 0 ; i < 1000 ; ++i )
-	t[i] = std::thread { func, std::ref(proc), i };
+        t[i] = std::thread { func, std::ref(proc), i };
     for ( int i = 0 ; i < 1000 ; ++i )
-	t[i].join();
+        t[i].join();
 }
 #endif
 
@@ -529,14 +599,14 @@ int main()
     std::vector<process> procs;
 
     for ( int i = 1 ; i <= 5 ; ++i )
-	//procs.push_back(  // does not work due to having no default constructor.
-	procs.emplace_back(
-	    std::initializer_list<std::string>{ "sleep", std::to_string(i) });
-	    // std::initializer_list<> is needed for template parameter of emplace_back() 
-	    // to recognize it properly.
+        //procs.push_back(  // does not work due to having no default constructor.
+        procs.emplace_back(
+            std::initializer_list<std::string>{ "sleep", std::to_string(i) });
+            // std::initializer_list<> is needed for template parameter of emplace_back() 
+            // to recognize it properly.
 
     for ( auto& p: procs )
-	p.wait();
+        p.wait();
 }
 #endif
 
@@ -555,7 +625,7 @@ int main()
     process { "sleep", "0.1" }.wait();
 
     process proc2 { std::move(proc) };
-	// modifies here proc which is being accessed by func().
+        // modifies here proc which is being accessed by func().
     proc2.wait();
     t.join();
 }
