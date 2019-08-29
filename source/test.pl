@@ -26,7 +26,9 @@ sub start_a_out($) {
     return $child_pid;
 }
 
-build_a_out <<EOF;
+print "testing for simple sleep... ";
+
+build_a_out <<'EOF';
 #include "process.hpp"
 #include "fdstream.hpp"
 #include <iostream>
@@ -34,15 +36,15 @@ build_a_out <<EOF;
 int main()
 {
     process proc { "sleep", "3" };
+    std::cout << proc.pid << std::endl;
     proc.wait();  // not to make proc an orphan process
 }
 EOF
 
-my $pid = start_a_out "./a.out";
-print "pid = $pid";
+open PIPE, "./a.out|" or die "a.out error: $!";
+print <PIPE>;
 
-my $ps = `ps`;
-print $ps;
-
-waitpid $pid, 0;
-
+#my $pid = start_a_out "./a.out";
+#grep /\bsleep\b/, `ps` or die "huh?";
+#waitpid $pid, 0;
+print "ok\n";
