@@ -8,12 +8,12 @@
 #pragma once
 
 #include <algorithm>  // min()
-#include <cassert>  // assert()
 
 #include "_pipe.hpp"
-//#include <cstdlib>: _Exit()
-//#include <system_error>: system_error(), system_category(), errno
-//#include <unistd.h>: STD*_FILENO, close(), fork(), execvp()
+//#include <cassert>  // assert()
+//#include <cstdlib>  // _Exit()
+//#include <system_error>  // system_error(), system_category(), errno
+//#include <unistd.h>  // STD*_FILENO, close(), fork(), execvp()
 
 #include <mutex>  // mutex, lock_guard<>, unique_lock<>, once_flag, call_once()
 #include <condition_variable>
@@ -24,9 +24,9 @@
 #include <thread>  // this_thread::sleep_for()
 
 #include <string>  // basic_string<>, string, .c_str()
-//#include <stdio.h>: dprintf()
+//#include <stdio.h>  // dprintf()
 #include <vector>  // vector<>, .push_back(), .shrink_to_fit(), .data()
-//#include <initializer_list>: initializer_list<>
+//#include <initializer_list>  // initializer_list<>
 
 extern "C" {
 #include <sys/wait.h>  // waitpid(), WNOHANG, WEXITSTATUS, ...
@@ -80,6 +80,10 @@ public:
         STDERR  = STDERR_FILENO
     };
 
+    // The fds for standard streams of child process, which can be specified in the 
+    // constructor. However, after the constructor starts the child process, PIPE will 
+    // turn into the fd of the new pipe, and the other fds (including DEVNULL and STD*) 
+    // will change to -1.
     const int& stdin  = _stdin;
     const int& stdout = _stdout;
     const int& stderr = _stderr;
