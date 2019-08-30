@@ -26,7 +26,7 @@ sub start_a_out($) {
     return $child_pid;
 }
 
-print "testing for simple sleep... ";
+print "testing for simple sleep...\n";
 
 build_a_out <<'EOF';
 #include "process.hpp"
@@ -41,10 +41,10 @@ int main()
 }
 EOF
 
-open PIPE, "./a.out|" or die "a.out error: $!";
-print <PIPE>;
+#open PIPE, "./a.out|" or die "a.out error: $!";
+#print <PIPE>;
 
-#my $pid = start_a_out "./a.out";
-#grep /\bsleep\b/, `ps` or die "huh?";
-#waitpid $pid, 0;
+my $pid = start_a_out "./a.out";
+grep /\bsleep\b/, `ps` or die "huh?";
+waitpid $pid, 0;
 print "ok\n";

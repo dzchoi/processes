@@ -158,23 +158,23 @@ process::process(int fd0, const char* argv[], int fd1, int fd2)
     _pipe<true> pipe_out = _fd_or_devnull(fd1);
     _pipe<true> pipe_err = ( fd2 == SAMEOUT ? pipe_out.near : _fd_or_devnull(fd2) );
 
-    // The _pipe<> class contains two file descriptors, "far" and "near". The "far" 
-    // refers to the file descriptor far from child process, while "near" refers to the 
-    // one near to child process.
-    // When we are given a fdN >= 0 as argument, we simply put it at near and set far = 
-    // -1. If fdN == -1 (PIPE), we create a pipe with two new file descriptors, which we 
-    // put at near and far. Nears are used in a child process to redirect the child's 
-    // standard streams (stdin/stdout/stdout) to. Fars (if != -1) are used for (outer) 
-    // file descriptors that are connected to the corresponding (inner) standard streams 
-    // of the child process; if far == -1, we don't have such a file descriptor connected 
-    // to a child stream.
-    // After all pipes/redirections set up, parent process closes nears because they are 
-    // not used any longer by parent process, and child process closes both nears and 
-    // fars because child process has its stdin/stdout/stderr now point (redirect) to 
-    // them. So, from parent's view, a given fdN turns into -1 for redirection or a file 
+    // Internally, the _pipe<> class contains two file descriptors, "far" and "near". The 
+    // "far" refers to the file descriptor far from child process, while "near" refers to 
+    // the one near to child process.
+    // When the constructor is given a fdX >= 0 as an argument, it is put in near and far 
+    // is set to -1. If fdX == -1 (process::PIPE), a pipe is created with two new file 
+    // descriptors, which are put in near and far. Nears are used in a child process to 
+    // redirect the child process' standard streams (stdin/stdout/stdout) to. Fars (if != 
+    // -1) refer to (outer) file descriptors that are associated with the counterpart 
+    // (inner) file descriptors of the child process; if far == -1, it means no such a 
+    // file descriptor is associated.
+    // After all pipes/redirections are set up, parent process closes nears because they 
+    // are no longer used by parent process, and child process closes both nears and fars 
+    // because child process has its stdin/stdout/stderr now point (redirect) to them. 
+    // So, from parent's view, a given fdX turns into -1 for redirection or a file 
     // descriptor for pipe.
-    // Note also that if far == -1, the given fdN came from outside and process object 
-    // cannot close the fdN on its destruction, but if far != -1, as created from inside, 
+    // Note also that if far == -1, the given fdX came from outside and process object 
+    // cannot close the fdX on its destruction, but if far != -1, as created from inside, 
     // far is thought to be owned by process object and gets closed on the destruction.
 
     if ( (_pid = ::fork()) == 0 )  // run in child process!
